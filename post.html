@@ -303,7 +303,7 @@
         const ok = await updatePost(postType, editId, data);
         if (ok) setTimeout(() => window.location.href = "dashboard.html", 800);
       } else {
-        const id = await createPost(postType, data, selectedFile, currentUser.uid, onProgress);
+        const id = await createPost(postType, data, selectedFile, currentUser.id, onProgress);
         if (id) setTimeout(() => window.location.href = postType === "lost" ? "lost.html" : "found.html", 800);
       }
     });

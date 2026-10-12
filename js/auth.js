@@ -1,102 +1,86 @@
-// ============================================================
-// auth.js — Authentication helpers
-// ============================================================
-import { auth } from "./firebase.js";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { supabase } from "./supabase.js";
 import { showToast, showSpinner, hideSpinner } from "./ui.js";
 
-// ── Sign Up ───────────────────────────────────────────────────
 export async function signUp(name, email, password) {
   showSpinner();
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: name });
-    showToast("Account created! Welcome aboard 🎉", "success");
-    return cred.user;
+    const { data, error } = await supabase.auth.signUp({
+      email, password, options: { data: { display_name: name } },
+    });
+    if (error) throw error;
+    showToast(data.session ? "Account created! Welcome aboard 🎉" : "Account created. Check your email to confirm, then log in.", "success");
+    return data.user;
   } catch (err) {
-    showToast(friendlyError(err.code), "error");
+    showToast(friendlyError(err), "error");
     return null;
-  } finally {
-    hideSpinner();
-  }
+  } finally { hideSpinner(); }
 }
 
-// ── Login ─────────────────────────────────────────────────────
 export async function login(email, password) {
   showSpinner();
   try {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    showToast(`Welcome back, ${cred.user.displayName || "User"}!`, "success");
-    return cred.user;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    showToast(`Welcome back, ${data.user.user_metadata?.display_name || "User"}!`, "success");
+    return data.user;
   } catch (err) {
-    showToast(friendlyError(err.code), "error");
+    showToast(friendlyError(err), "error");
     return null;
-  } finally {
-    hideSpinner();
-  }
+  } finally { hideSpinner(); }
 }
 
-// ── Logout ────────────────────────────────────────────────────
 export async function logout() {
-  await signOut(auth);
-  showToast("Logged out successfully.", "info");
-  window.location.href = "login.html";
+  const { error } = await supabase.auth.signOut();
+  if (error) showToast(error.message, "error");
+  else { showToast("Logged out successfully.", "info"); window.location.href = "login.html"; }
 }
 
-// ── Reset Password ────────────────────────────────────────────
 export async function resetPassword(email) {
   showSpinner();
   try {
-    await sendPasswordResetEmail(auth, email);
+    const redirectTo = new URL("forgot-password.html", window.location.href).href;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
     showToast("Password reset email sent! Please check your inbox.", "success");
     return true;
-  } catch (err) {
-    showToast(friendlyError(err.code), "error");
-    return false;
-  } finally {
-    hideSpinner();
-  }
+  } catch (err) { showToast(friendlyError(err), "error"); return false; }
+  finally { hideSpinner(); }
 }
 
-// ── Session Watcher ───────────────────────────────────────────
+export async function updatePassword(password) {
+  showSpinner();
+  try {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    showToast("Password updated. You can sign in now.", "success");
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+    return true;
+  } catch (err) { showToast(friendlyError(err), "error"); return false; }
+  finally { hideSpinner(); }
+}
+
 export function watchAuth(onUser, onGuest) {
-  onAuthStateChanged(auth, (user) => {
-    if (user) onUser(user);
-    else if (onGuest) onGuest();
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session) onUser(data.session.user); else onGuest?.();
   });
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    if (session) onUser(session.user); else onGuest?.();
+  });
+  return () => subscription.unsubscribe();
 }
 
-// ── Require Auth (redirect if not logged in) ─────────────────
-export function requireAuth() {
-  return new Promise((resolve) => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      unsub();
-      if (!user) {
-        window.location.href = "login.html";
-      } else {
-        resolve(user);
-      }
-    });
-  });
+export async function requireAuth() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) { window.location.href = "login.html"; return new Promise(() => {}); }
+  return session.user;
 }
 
-// ── Human-readable error messages ─────────────────────────────
-function friendlyError(code) {
-  const map = {
-    "auth/email-already-in-use":  "This email is already registered.",
-    "auth/invalid-email":         "Please enter a valid email address.",
-    "auth/weak-password":         "Password must be at least 6 characters.",
-    "auth/user-not-found":        "No account found with this email.",
-    "auth/wrong-password":        "Incorrect password. Please try again.",
-    "auth/too-many-requests":     "Too many attempts. Try again later.",
-    "auth/network-request-failed":"Network error. Check your connection.",
+function friendlyError(err) {
+  const messages = {
+    "User already registered": "This email is already registered.",
+    "Invalid login credentials": "Email or password is incorrect.",
+    "Password should be at least 6 characters": "Password must be at least 6 characters.",
   };
-  return map[code] || "Something went wrong. Please try again.";
+  return messages[err.message] || err.message || "Something went wrong. Please try again.";
 }

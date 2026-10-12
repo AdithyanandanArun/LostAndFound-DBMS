@@ -1,174 +1,42 @@
 # Lost & Found Platform
 
-A modern, responsive **Lost & Found web application** designed to help
-users report, search, and recover lost belongings efficiently.
+A static Lost & Found app hosted on GitHub Pages, using Supabase Auth, Postgres, and Storage.
 
-## Problem Statement
+## Supabase setup
 
-Losing personal belongings in campuses, public spaces, or events often
-leads to confusion and poor recovery rates due to the lack of a
-centralized reporting system.
+1. Create a Supabase project.
+2. In the SQL Editor, run [`db/migrations/001_initial_schema.sql`](db/migrations/001_initial_schema.sql). This creates the tables, auth profile trigger, row level security policies, and the public `item-images` bucket.
+3. Copy the Project URL and anon/public key from **Project Settings → API** into `config.js`. The anon key is intended for browser use; never put a `service_role` key in this repository.
+4. In **Authentication → URL Configuration**, set the GitHub Pages URL as the Site URL and add it to the Redirect URLs. For a project repository the URL is `https://OWNER.github.io/REPOSITORY/`.
+5. Configure email confirmation and password reset email templates as desired in Supabase Auth.
 
-The **Lost & Found Platform** solves this problem by providing: - A
-centralized system to report lost/found items - Search and filtering
-functionality - Image-based identification - Direct contact options -
-Organized item management
+`config.js` is public. RLS is what protects user-owned changes. Review and keep the policies in the migration enabled before deploying.
 
-## Features
+## Deploy to GitHub Pages
 
-### Item Management
+The repository includes a Pages workflow in `.github/workflows/pages.yml`. In GitHub, select **Settings → Pages → Build and deployment → GitHub Actions**, then push to `main`. The workflow publishes the static files; no server or build secrets are required. GitHub Pages URLs and page links are relative so this works from a repository subpath.
 
--   Post **Lost Items**
--   Post **Found Items**
--   Edit existing posts
--   Delete posts
--   Update item status
+## Local development
 
-### Image Upload
+Serve the repository root over HTTP (ES modules do not work reliably from `file://`):
 
--   Upload item photos using **Firebase Storage**
--   Image preview before posting
--   Drag-and-drop image support
--   Upload progress tracking
-
-### Search & Filtering
-
-Search by: - Item title - Description - Location - Contact details
-
-### Dashboard
-
--   View all personal posts
--   Manage uploaded items
--   Edit item details
--   Track status
-
-### Contact Features
-
--   Contact information on item cards
--   Contact page with:
-    -   Team contact information
-    -   Social links (GitHub & LinkedIn)
-    -   Embedded Google Maps location
-    -   Firebase-powered contact form
-
-### Authentication
-
--   Firebase Authentication
--   User login/logout
--   Protected routes
-
-### Responsive UI
-
-Fully responsive across: - Mobile - Tablet - Desktop
-
-## Tech Stack
-
-### Frontend
-
--   HTML5
--   CSS3
--   JavaScript (ES6 Modules)
--   Tailwind CSS
-
-### Backend & Database
-
--   Firebase Firestore
--   Firebase Storage
--   Firebase Authentication
-
-### Hosting
-
--   GitHub Pages
-
-## Project Structure
-
-```text
-Lost-and-Found/
-├── index.html
-├── login.html
-├── forgot-password.html
-├── post.html
-├── lost.html
-├── found.html
-├── dashboard.html
-├── contact.html
-├── README.md
-├── css/
-│   └── style.css
-├── js/
-│   ├── auth.js
-│   ├── firebase.js
-│   ├── posts.js
-│   ├── search.js
-│   ├── dashboard.js
-│   ├── ui.js
-│   └── contact.js
-├── assets/
-│   ├── Adithyanandan.png
-│   ├── Ganesh.png
-│   ├── rahul.jpeg
-│   └── Yazeen.jpeg
+```sh
+python -m http.server 8000
 ```
 
-## Firebase Collections
+Then open `http://localhost:8000`. Add that origin to Supabase Auth's allowed redirect URLs if using password reset locally.
 
--   `lostItems`
--   `foundItems`
--   `contactMessages`
+## Existing Firebase data
 
-## Setup
+The app no longer reads or writes Firebase. Existing Firebase accounts, posts, and images have not been transferred; the demo starts with a fresh Supabase database. See [`db/README.md`](db/README.md) for the schema overview.
 
-### Clone Repository
+## Current functionality
 
-``` bash
-git clone https://github.com/YOUR_USERNAME/Lost-and-Found.git
-cd Lost-and-Found
-```
+- Email/password signup, login, logout, and password reset through Supabase Auth
+- Public lost/found listings and search
+- Authenticated item creation, editing, deletion, and status updates
+- Item photos in Supabase Storage
+- Public contact form saved to Postgres
+- Owner scoped operations enforced by Postgres RLS
 
-### Configure Firebase
-
-Enable: - Firestore Database - Firebase Authentication - Firebase
-Storage
-
-Add Firebase config inside:
-
-`js/firebase.js`
-
-### Run Locally
-
-Using VS Code Live Server:
-
-``` text
-Right Click → Open with Live Server
-```
-
-Or:
-
-``` bash
-python -m http.server
-```
-
-## Future Improvements
-
--   AI-powered item matching
--   Email notifications
--   Admin dashboard for messages
--   Claim verification workflow
--   Real-time chat support
-
-## Contributors
-
--   **Rahul R Nair**
--   **Adithyanandan Arun**
--   **Ganesh S**
--   **Muhammad Yazeen**
-
-## Academic Purpose
-
-This project was developed as a **college team project** to explore: -
-Frontend Development - Firebase Integration - Authentication Systems -
-Cloud Databases - Full Stack Development
-
-## License
-
-This project is intended for **educational and academic purposes**.
+Claims, messaging, notifications, and moderation tables are schema groundwork; the UI for those workflows is not implemented yet.

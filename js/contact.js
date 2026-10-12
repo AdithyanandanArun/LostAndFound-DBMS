@@ -2,13 +2,7 @@
 // contact.js — Contact page form handling
 // ============================================================
 
-import { db } from "./firebase.js";
-
-import {
-  collection,
-  addDoc,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { supabase } from "./supabase.js";
 
 import { logout } from "./auth.js";
 import {
@@ -93,23 +87,13 @@ document
     }
 
 
-    // ── Save to Firebase ─────────────────────
+    // ── Save to Supabase ─────────────────────
     showSpinner();
 
     try {
 
-      await addDoc(
-        collection(db, "contactMessages"),
-        {
-          name,
-          email,
-          subject,
-          message,
-
-          createdAt:
-            serverTimestamp()
-        }
-      );
+      const { error } = await supabase.from("contact_messages").insert({ name, email, subject, message });
+      if (error) throw error;
 
       showToast(
         "Message sent successfully! 🎉",

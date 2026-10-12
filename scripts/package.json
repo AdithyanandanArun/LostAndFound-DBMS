@@ -1,0 +1,9 @@
+{
+  "name": "lost-and-found-migration-tools",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "pg": "^8.13.0"
+  }
+}

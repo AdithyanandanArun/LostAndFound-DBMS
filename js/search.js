@@ -109,7 +109,7 @@ export async function initSearch(type) {
   try {
     allItems = await fetchPosts(type);
   } catch (e) {
-    renderEmptyState(grid, "Failed to load items. Please check your Firebase config.");
+    renderEmptyState(grid, "Could not load items. Check the Supabase setup and try again.");
     return;
   }
 

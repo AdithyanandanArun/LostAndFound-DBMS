@@ -159,7 +159,7 @@
             <div class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center mt-0.5 flex-shrink-0">
               <span class="text-emerald-400 text-xs">✓</span>
             </div>
-            <p class="text-slate-400 text-sm">Centralized real-time database powered by Firebase</p>
+            <p class="text-slate-400 text-sm">A central place to report and find lost belongings</p>
           </div>
           <div class="flex items-start gap-3">
             <div class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center mt-0.5 flex-shrink-0">
@@ -281,7 +281,6 @@
   </footer>
 
   <script type="module">
-    import { auth }                          from "./js/firebase.js";
     import { logout, watchAuth }             from "./js/auth.js";
     import { fetchRecentPosts }              from "./js/posts.js";
     import { itemCard, renderSkeletons }     from "./js/search.js";
@@ -341,7 +340,7 @@
           grid.innerHTML = recent.map(item => itemCard(item, "lost")).join("");
         }
       } catch(e) {
-        grid.innerHTML = `<div class="col-span-full text-center text-slate-600 py-16">Connect Firebase to see live data.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center text-slate-600 py-16">Could not load items. Check the Supabase setup and try again.</div>`;
       }
     }
 
